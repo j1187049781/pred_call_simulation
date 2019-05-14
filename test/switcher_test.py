@@ -10,7 +10,6 @@ def set_lambda(env,switcher,num):
 if __name__=='__main__':
     env = simpy.Environment()
     sw=Switcher(env,3)
-    # sw.dialing_lines.set_lambda_parm(1)
     agent=Agent(env,3)
 
     # env.process(set_lambda(env, sw, 1))
