@@ -76,11 +76,11 @@ class Switcher():
                            yield finsh_signal
                            output_info+="{} 完成服务，断开连接\t".format(self.env.now)
                        else:
-                           output_info+="{} 客户离开客服队列\n".format(self.env.now)
+                           output_info+="{} 客户离开客服队列".format(self.env.now)
                 else:
-                    output_info+="{} 客户挂断\n".format(self.env.now)
+                    output_info+="{} 客户挂断".format(self.env.now)
             else:
                 swicher_no_patince_signal.succeed()
-                output_info+="{} 超过拨号等待时间，交换机挂断\n".format(self.env.now)
+                output_info+="{} 超过拨号等待时间，交换机挂断".format(self.env.now)
             print(output_info)
 

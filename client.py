@@ -37,7 +37,7 @@ class Client():
                 talk_line.succeed("hup")
         else:
             out_info +="交换机挂断电话"
-        print(out_info)
+        # print(out_info)
 
 
 
