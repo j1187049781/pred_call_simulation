@@ -32,7 +32,7 @@ class DialingLine(simpy.PriorityResource):
             req=self.request(priority=-1)
             self.request_close_buff.put_nowait(req)
     def get_available_lines(self):
-        return self.capacity-self.count-self.request_close_buff.qsize()
+        return self.capacity-self.count
 
 class Switcher():
     def __init__(self, env, max_concurrent_dialing):
@@ -49,24 +49,28 @@ class Switcher():
         拨打一个电话号
         :param tel_num: 电话号
         :param conn_patience: 未接通超时挂断
-        :return: (tel_num,patience,status,talk_time,agent_id)
+        # :return: (tel_num,patience,status,talk_time,agent_id)
         '''
         output_info=""
-        start_signal, talk_line, start_service_signal,no_wait_patience_signal, finsh_signal=client.line
+        start_signal,swicher_no_patince_signal, talk_line, start_service_signal,no_wait_patience_signal, finsh_signal=client.line
         with self.dialing_lines.request(priority=0) as req:
             yield req
             output_info+="{} 拨打电话号: {} ...\t".format(self.env.now,client.tel_num)
-            print("{} 拨打电话号: {} ...\t ,usable {}".format(self.env.now, client.tel_num,self.dialing_lines.get_available_lines()))
             start_signal.succeed()
             respone_timeout=self.env.timeout(conn_patience)
             ret=yield  talk_line | respone_timeout
 
-            if talk_line in ret:
+            if talk_line in ret and respone_timeout not in ret:
                 if ret[talk_line]=="nohup":
                     output_info+="{} 连接成功,加入连接客服队列\t".format(self.env.now)
                     with agent.request() as req:
-                       conn_agent_ret=yield req  | no_wait_patience_signal
-                       if req in conn_agent_ret:
+                       conn_agent_ret=yield req | no_wait_patience_signal
+
+                       if req in conn_agent_ret and \
+                               no_wait_patience_signal not in conn_agent_ret:
+                           # 连接到客服和客户不想等待离开客服队列可能同时发生,
+                           # 客户会选择离开,不加no_wait_patience_signal not in conn_agent_ret,
+                           # 会到致switcher 收不到fish_signal
                            start_service_signal.succeed()
                            output_info+="{} 连接到客服... ".format(self.env.now)
                            yield finsh_signal
@@ -74,7 +78,9 @@ class Switcher():
                        else:
                            output_info+="{} 客户离开客服队列\n".format(self.env.now)
                 else:
-                    output_info+="{} 客户 {} 挂断\n".format(self.env.now)
+                    output_info+="{} 客户挂断\n".format(self.env.now)
             else:
+                swicher_no_patince_signal.succeed()
                 output_info+="{} 超过拨号等待时间，交换机挂断\n".format(self.env.now)
             print(output_info)
+
